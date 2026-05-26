@@ -1,0 +1,3 @@
+sample_id	read1	read2	condition	library_layout
+tiny_se	reads/tiny_se.fq		control	single-end
+tiny_pe	reads/tiny_pe_R1.fq	reads/tiny_pe_R2.fq	treated	paired-end
