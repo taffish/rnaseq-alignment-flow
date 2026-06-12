@@ -11,10 +11,11 @@ Package identity:
 - name: `rnaseq-alignment-flow`
 - command: `taf-rnaseq-alignment-flow`
 - kind: `flow`
-- version: `0.1.0-r1`
+- version: `0.2.0-r1`
 - license: Apache-2.0
+- repository: https://github.com/taffish/rnaseq-alignment-flow
 
-## RNA-seq Flow Position
+## Flow Position
 
 This app is a reusable subflow in the TAFFISH bulk RNA-seq flow family. It can
 be run directly when users need coordinate-sorted BAM files, and it is also
@@ -53,6 +54,35 @@ The flow depends on exact TAFFISH tool versions:
 The script also uses ordinary shell utilities such as `awk`, `sed`, `sort`,
 `find`, `mkdir`, `cp`, `rm`, `date`, and `wc` for validation and bookkeeping.
 It does not call host-installed HISAT2, SAMtools, fastp, or MultiQC.
+
+## Input Formats
+
+Single-end:
+
+```text
+sample_id	read1	condition	library_layout
+S1	reads/S1.fq.gz	control	single-end
+S2	reads/S2.fq.gz	treated	single-end
+```
+
+Paired-end:
+
+```text
+sample_id	read1	read2	condition	library_layout
+S1	reads/S1_R1.fq.gz	reads/S1_R2.fq.gz	control	paired-end
+S2	reads/S2_R1.fq.gz	reads/S2_R2.fq.gz	treated	paired-end
+```
+
+Rules:
+
+- `sample_id` must be unique and contain only letters, digits, dot, underscore,
+  or dash.
+- `read1` is required and must point to a readable FASTQ file.
+- `read2` is required only for `paired-end`.
+- Relative FASTQ paths are resolved relative to the sample table location.
+- Extra columns are ignored by this flow but preserved in upstream metadata
+  when users keep their own project tables.
+
 
 ## Usage
 
@@ -111,35 +141,37 @@ Common:
 - `--force`: replace the standard rnaseq-alignment-flow outputs in an existing
   output directory.
 
-## Sample Table
+## Advanced Per-Step Passthrough
 
-Single-end:
+Most users should rely on the stable parameters above. `0.2.0-r1` also exposes
+optional `@step:` slots for native tool parameters that are not modeled by the
+flow. They default to empty and only affect the named call site when explicitly
+supplied:
 
-```text
-sample_id	read1	condition	library_layout
-S1	reads/S1.fq.gz	control	single-end
-S2	reads/S2.fq.gz	treated	single-end
+```sh
+taf-rnaseq-alignment-flow ... @hisat2-align-pe-step: --dta @:
 ```
 
-Paired-end:
+The general syntax is documented in the
+[TAFFISH Flow Developer Guide (English)](https://github.com/taffish/taffish-docs/blob/main/en/taf-flow-developer-guide.en.md)
+and [TAFFISH Flow 开发者指南（中文）](https://github.com/taffish/taffish-docs/blob/main/zh/taf-flow-developer-guide.cn.md).
 
-```text
-sample_id	read1	read2	condition	library_layout
-S1	reads/S1_R1.fq.gz	reads/S1_R2.fq.gz	control	paired-end
-S2	reads/S2_R1.fq.gz	reads/S2_R2.fq.gz	treated	paired-end
-```
+| Slot | Native call site |
+| --- | --- |
+| `@fastp-pe-step: ... @:` | fastp paired-end trimming |
+| `@fastp-se-step: ... @:` | fastp single-end trimming |
+| `@hisat2-align-pe-step: ... @:` | HISAT2 paired-end alignment |
+| `@hisat2-align-se-step: ... @:` | HISAT2 single-end alignment |
+| `@samtools-sort-step: ... @:` | `samtools sort` |
+| `@samtools-index-step: ... @:` | `samtools index` for sorted BAM |
+| `@samtools-quickcheck-step: ... @:` | `samtools quickcheck` |
+| `@samtools-flagstat-step: ... @:` | `samtools flagstat` |
+| `@samtools-idxstats-step: ... @:` | `samtools idxstats` |
+| `@samtools-mapq-filter-step: ... @:` | optional `samtools view` MAPQ filter |
+| `@samtools-mapq-index-step: ... @:` | `samtools index` for MAPQ-filtered BAM |
+| `@multiqc-step: ... @:` | MultiQC report generation |
 
-Rules:
-
-- `sample_id` must be unique and contain only letters, digits, dot, underscore,
-  or dash.
-- `read1` is required and must point to a readable FASTQ file.
-- `read2` is required only for `paired-end`.
-- Relative FASTQ paths are resolved relative to the sample table location.
-- Extra columns are ignored by this flow but preserved in upstream metadata
-  when users keep their own project tables.
-
-## Outputs
+## Output Layout
 
 All flow-created outputs are written under `<outdir>/`:
 
@@ -190,7 +222,7 @@ Important files:
 - `run.manifest.json`: inputs, parameters, dependency versions, counts, and
   output paths.
 
-## Downstream Connection
+## Data Flow and Contracts
 
 The next alignment-branch flows consume `bam_files.tsv`:
 
@@ -228,6 +260,8 @@ alignment result is biologically good enough, and it does not replace deeper
 BAM/RNA-seq QC. Use downstream count and alignment-QC flows for gene counting
 and detailed RSeQC/Qualimap checks.
 
+## Testing
+
 Smoke builds a tiny HISAT2 index from a toy reference and runs mixed
 single-end/paired-end fixtures. Formal testing builds a temporary HISAT2 index
 from the central yeast SGD reference and aligns a small real FASTQ subset from
@@ -235,3 +269,10 @@ the central yeast SNF2 mini dataset. The central data tree can be prepared with
 `repos/apps/bio/flows/rna-seq/test-data/yeast/rnaseq-yeast-get-data`; downstream
 formal tests read it via `TAFFISH_RNASEQ_TESTDATA` or the default local
 `test-data/yeast/data/03_results` path.
+
+## License and Citation
+
+TAFFISH app packaging: Apache-2.0.
+
+Upstream tools keep their own license and citation requirements. See the
+dependency app records and upstream projects for details.

@@ -1,14 +1,9 @@
-rnaseq-alignment-flow 0.1.0-r1
+rnaseq-alignment-flow 0.2.0-r1
 
 Purpose:
   Align RNA-seq FASTQ samples to a prebuilt HISAT2 index, then create
   coordinate-sorted BAM files, BAM indexes, alignment summaries, MultiQC,
   logs, commands, versions, methods, and a manifest under one output directory.
-
-Flow family role:
-  This is a TAFFISH RNA-seq subflow. It can be run directly to prepare sorted
-  BAM files, and its bam_files.tsv contract is intended for the optional
-  alignment/count branch of future rnaseq-standard-flow orchestration.
 
 Usage:
   taf-rnaseq-alignment-flow \
@@ -59,38 +54,57 @@ Common options:
       Replace the standard rnaseq-alignment-flow outputs inside an existing
       output directory.
 
-Output tree:
-  <outdir>/00_inputs/samples.tsv
-  <outdir>/01_logs/flow.log
-  <outdir>/01_logs/steps/01_validate_inputs.log
-  <outdir>/01_logs/steps/02_fastp.log
-  <outdir>/01_logs/steps/03_align.log
-  <outdir>/01_logs/steps/04_sort_index.log
-  <outdir>/01_logs/steps/05_multiqc.log
-  <outdir>/02_intermediate/alignment_inputs.tsv
-  <outdir>/02_intermediate/trimmed/
-  <outdir>/02_intermediate/sam/
-  <outdir>/03_results/bam/
-  <outdir>/03_results/aligner_logs/
-  <outdir>/03_results/alignment_summary.tsv
-  <outdir>/04_reports/bam_files.tsv
-  <outdir>/04_reports/multiqc_report.html
-  <outdir>/04_reports/commands.sh
-  <outdir>/04_reports/versions.tsv
-  <outdir>/04_reports/methods.txt
-  <outdir>/04_reports/flow_summary.tsv
-  <outdir>/run.manifest.json
+Key outputs:
+  <outdir>/03_results/bam/*.sorted.bam
+      Coordinate-sorted BAM files.
 
-Dependencies:
-  taf-hisat2 2.2.2-r2
-  taf-samtools 1.23.1-r1
-  taf-fastp 1.3.3-r3
-  taf-multiqc 1.35-r2
+  <outdir>/03_results/bam/*.sorted.bam.bai
+      BAM indexes.
+
+  <outdir>/04_reports/bam_files.tsv
+      Stable BAM table for count and alignment-QC flows.
+
+  <outdir>/03_results/alignment_summary.tsv
+      Per-sample mapping summary.
+
+  <outdir>/04_reports/multiqc_report.html
+      Aggregated alignment report.
+
+  <outdir>/04_reports/
+      commands.sh, versions.tsv, methods.txt, flow_summary.tsv, and provenance.
+
+Upstream/downstream:
+  Upstream:
+    rnaseq-index-flow can provide hisat2_index/genome.
+
+  Downstream:
+    rnaseq-count-flow and rnaseq-alignment-qc-flow consume bam_files.tsv.
+    rnaseq-report-flow can collect the alignment output directory.
+
+Advanced step passthrough:
+  Optional expert slots for native tool parameters. They default to empty
+  and are not needed for normal use.
+
+  @fastp-pe-step: ... @: fastp paired-end trimming.
+  @fastp-se-step: ... @: fastp single-end trimming.
+  @hisat2-align-pe-step: ... @: HISAT2 paired-end alignment.
+  @hisat2-align-se-step: ... @: HISAT2 single-end alignment.
+  @samtools-sort-step: ... @: samtools sort.
+  @samtools-index-step: ... @: samtools index for sorted BAM.
+  @samtools-quickcheck-step: ... @: samtools quickcheck.
+  @samtools-flagstat-step: ... @: samtools flagstat.
+  @samtools-idxstats-step: ... @: samtools idxstats.
+  @samtools-mapq-filter-step: ... @: optional samtools view MAPQ filter.
+  @samtools-mapq-index-step: ... @: samtools index for MAPQ-filtered BAM.
+  @multiqc-step: ... @: MultiQC report generation.
 
 Boundaries:
   r1 does not build HISAT2 or STAR indexes, does not run STAR, featureCounts,
   RSeQC, Qualimap, DESeq2, enrichment, or project report collection. It prepares
   sorted BAM/BAI outputs for downstream count and alignment-QC flows.
+
+Detailed documentation:
+  https://github.com/taffish/rnaseq-alignment-flow
 
 Wrapper options:
   -h, --help       Show this help.

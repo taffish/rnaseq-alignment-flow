@@ -1,7 +1,7 @@
 [package]
 name = "rnaseq-alignment-flow"
 kind = "flow"
-version = "0.1.0"
+version = "0.2.0"
 release = 1
 license = "Apache-2.0"
 main = "src/main.taf"
@@ -26,7 +26,7 @@ description = "TAFFISH RNA-seq alignment flow for turning FASTQ sample tables an
 name = "rnaseq-alignment-flow"
 type = "taffish-flow"
 homepage = "https://github.com/taffish/rnaseq-alignment-flow"
-version = "0.1.0"
+version = "0.2.0"
 license = "Apache-2.0"
 description = "TAFFISH-maintained RNA-seq alignment flow composed from version-pinned HISAT2, SAMtools, fastp, and MultiQC TAFFISH tool apps."
 

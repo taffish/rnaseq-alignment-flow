@@ -10,13 +10,25 @@ ARGS
   none
 <(--min-mapq)min-mapq>
   0
+<(@:)fastp-pe-step>
+<(@:)fastp-se-step>
+<(@:)hisat2-align-pe-step>
+<(@:)hisat2-align-se-step>
+<(@:)samtools-sort-step>
+<(@:)samtools-index-step>
+<(@:)samtools-quickcheck-step>
+<(@:)samtools-flagstat-step>
+<(@:)samtools-idxstats-step>
+<(@:)samtools-mapq-filter-step>
+<(@:)samtools-mapq-index-step>
+<(@:)multiqc-step>
 
 RUN
 <taffish>
 set -eu
 
 FLOW_NAME="rnaseq-alignment-flow"
-FLOW_VERSION="0.1.0-r1"
+FLOW_VERSION="0.2.0-r1"
 
 samples_arg="::!(--samples)samples::"
 index_arg="::!(--index)index::"
@@ -336,17 +348,17 @@ if {
             if [ "$layout" = "paired-end" ]; then
                 out1="$trimmed_dir/$sid.R1.fastq.gz"
                 out2="$trimmed_dir/$sid.R2.fastq.gz"
-                cmd="taf-fastp-v1.3.3-r3 fastp -i $(sq "$read1") -I $(sq "$read2") -o $(sq "$out1") -O $(sq "$out2") -h $(sq "$html") -j $(sq "$json") -w $(sq "$threads")"
+                cmd="taf-fastp-v1.3.3-r3 fastp -i $(sq "$read1") -I $(sq "$read2") -o $(sq "$out1") -O $(sq "$out2") -h $(sq "$html") -j $(sq "$json") -w $(sq "$threads") ::(@:)fastp-pe-step::"
                 record_command "02_fastp $sid" "$cmd"
                 printf '\n$ %s\n' "$cmd"
-                [[taf: taf-fastp-v1.3.3-r3 fastp -i '"$read1"' -I '"$read2"' -o '"$out1"' -O '"$out2"' -h '"$html"' -j '"$json"' -w '"$threads"' ]] </dev/null
+                [[taf: taf-fastp-v1.3.3-r3 fastp -i '"$read1"' -I '"$read2"' -o '"$out1"' -O '"$out2"' -h '"$html"' -j '"$json"' -w '"$threads"' ::(@:)fastp-pe-step:: ]] </dev/null
                 printf '%s\t%s\t%s\t%s\ttrue\n' "$sid" "$out1" "$out2" "$layout" >> "$alignment_inputs"
             else
                 out1="$trimmed_dir/$sid.fastq.gz"
-                cmd="taf-fastp-v1.3.3-r3 fastp -i $(sq "$read1") -o $(sq "$out1") -h $(sq "$html") -j $(sq "$json") -w $(sq "$threads")"
+                cmd="taf-fastp-v1.3.3-r3 fastp -i $(sq "$read1") -o $(sq "$out1") -h $(sq "$html") -j $(sq "$json") -w $(sq "$threads") ::(@:)fastp-se-step::"
                 record_command "02_fastp $sid" "$cmd"
                 printf '\n$ %s\n' "$cmd"
-                [[taf: taf-fastp-v1.3.3-r3 fastp -i '"$read1"' -o '"$out1"' -h '"$html"' -j '"$json"' -w '"$threads"' ]] </dev/null
+                [[taf: taf-fastp-v1.3.3-r3 fastp -i '"$read1"' -o '"$out1"' -h '"$html"' -j '"$json"' -w '"$threads"' ::(@:)fastp-se-step:: ]] </dev/null
                 printf '%s\t%s\t.\t%s\ttrue\n' "$sid" "$out1" "$layout" >> "$alignment_inputs"
             fi
         else
@@ -374,22 +386,22 @@ if {
             strand_args=" --rna-strandness $(sq "$rna_strandness")"
         fi
         if [ "$layout" = "paired-end" ]; then
-            cmd="taf-hisat2-v2.2.2-r2 hisat2 -x $(sq "$index_prefix") -p $(sq "$threads")$strand_args --summary-file $(sq "$summary") -1 $(sq "$read1") -2 $(sq "$read2") -S $(sq "$sam")"
+            cmd="taf-hisat2-v2.2.2-r2 hisat2 -x $(sq "$index_prefix") -p $(sq "$threads")$strand_args --summary-file $(sq "$summary") -1 $(sq "$read1") -2 $(sq "$read2") -S $(sq "$sam") ::(@:)hisat2-align-pe-step::"
             record_command "03_align $sid" "$cmd"
             printf '\n$ %s\n' "$cmd"
             if [ "$rna_strandness" = "none" ]; then
-                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --summary-file '"$summary"' -1 '"$read1"' -2 '"$read2"' -S '"$sam"' ]] </dev/null
+                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --summary-file '"$summary"' -1 '"$read1"' -2 '"$read2"' -S '"$sam"' ::(@:)hisat2-align-pe-step:: ]] </dev/null
             else
-                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --rna-strandness '"$rna_strandness"' --summary-file '"$summary"' -1 '"$read1"' -2 '"$read2"' -S '"$sam"' ]] </dev/null
+                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --rna-strandness '"$rna_strandness"' --summary-file '"$summary"' -1 '"$read1"' -2 '"$read2"' -S '"$sam"' ::(@:)hisat2-align-pe-step:: ]] </dev/null
             fi
         else
-            cmd="taf-hisat2-v2.2.2-r2 hisat2 -x $(sq "$index_prefix") -p $(sq "$threads")$strand_args --summary-file $(sq "$summary") -U $(sq "$read1") -S $(sq "$sam")"
+            cmd="taf-hisat2-v2.2.2-r2 hisat2 -x $(sq "$index_prefix") -p $(sq "$threads")$strand_args --summary-file $(sq "$summary") -U $(sq "$read1") -S $(sq "$sam") ::(@:)hisat2-align-se-step::"
             record_command "03_align $sid" "$cmd"
             printf '\n$ %s\n' "$cmd"
             if [ "$rna_strandness" = "none" ]; then
-                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --summary-file '"$summary"' -U '"$read1"' -S '"$sam"' ]] </dev/null
+                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --summary-file '"$summary"' -U '"$read1"' -S '"$sam"' ::(@:)hisat2-align-se-step:: ]] </dev/null
             else
-                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --rna-strandness '"$rna_strandness"' --summary-file '"$summary"' -U '"$read1"' -S '"$sam"' ]] </dev/null
+                [[taf: taf-hisat2-v2.2.2-r2 hisat2 -x '"$index_prefix"' -p '"$threads"' --rna-strandness '"$rna_strandness"' --summary-file '"$summary"' -U '"$read1"' -S '"$sam"' ::(@:)hisat2-align-se-step:: ]] </dev/null
             fi
         fi
         [ -s "$sam" ] || fail "alignment SAM missing for $sid: $sam"
@@ -418,38 +430,38 @@ if {
         idxstats="$aligner_logs_dir/$sid.idxstats.tsv"
         summary="$aligner_logs_dir/$sid.hisat2.summary.txt"
 
-        cmd="taf-samtools-v1.23.1-r1 samtools sort -@ $(sq "$threads") -o $(sq "$bam") $(sq "$sam")"
+        cmd="taf-samtools-v1.23.1-r1 samtools sort -@ $(sq "$threads") -o $(sq "$bam") ::(@:)samtools-sort-step:: $(sq "$sam")"
         record_command "04_sort_index sort $sid" "$cmd"
         printf '\n$ %s\n' "$cmd"
-        [[taf: taf-samtools-v1.23.1-r1 samtools sort -@ '"$threads"' -o '"$bam"' '"$sam"' ]] </dev/null
-        cmd="taf-samtools-v1.23.1-r1 samtools index -@ $(sq "$threads") $(sq "$bam")"
+        [[taf: taf-samtools-v1.23.1-r1 samtools sort -@ '"$threads"' -o '"$bam"' ::(@:)samtools-sort-step:: '"$sam"' ]] </dev/null
+        cmd="taf-samtools-v1.23.1-r1 samtools index -@ $(sq "$threads") ::(@:)samtools-index-step:: $(sq "$bam")"
         record_command "04_sort_index index $sid" "$cmd"
         printf '\n$ %s\n' "$cmd"
-        [[taf: taf-samtools-v1.23.1-r1 samtools index -@ '"$threads"' '"$bam"' ]] </dev/null
-        cmd="taf-samtools-v1.23.1-r1 samtools quickcheck $(sq "$bam")"
+        [[taf: taf-samtools-v1.23.1-r1 samtools index -@ '"$threads"' ::(@:)samtools-index-step:: '"$bam"' ]] </dev/null
+        cmd="taf-samtools-v1.23.1-r1 samtools quickcheck ::(@:)samtools-quickcheck-step:: $(sq "$bam")"
         record_command "04_sort_index quickcheck $sid" "$cmd"
         printf '\n$ %s\n' "$cmd"
-        [[taf: taf-samtools-v1.23.1-r1 samtools quickcheck '"$bam"' ]] </dev/null
-        cmd="taf-samtools-v1.23.1-r1 samtools flagstat -@ $(sq "$threads") $(sq "$bam") > $(sq "$flagstat")"
+        [[taf: taf-samtools-v1.23.1-r1 samtools quickcheck ::(@:)samtools-quickcheck-step:: '"$bam"' ]] </dev/null
+        cmd="taf-samtools-v1.23.1-r1 samtools flagstat -@ $(sq "$threads") ::(@:)samtools-flagstat-step:: $(sq "$bam") > $(sq "$flagstat")"
         record_command "04_sort_index flagstat $sid" "$cmd"
         printf '\n$ %s\n' "$cmd"
-        [[taf: taf-samtools-v1.23.1-r1 samtools flagstat -@ '"$threads"' '"$bam"' ]] </dev/null > "$flagstat"
-        cmd="taf-samtools-v1.23.1-r1 samtools idxstats $(sq "$bam") > $(sq "$idxstats")"
+        [[taf: taf-samtools-v1.23.1-r1 samtools flagstat -@ '"$threads"' ::(@:)samtools-flagstat-step:: '"$bam"' ]] </dev/null > "$flagstat"
+        cmd="taf-samtools-v1.23.1-r1 samtools idxstats ::(@:)samtools-idxstats-step:: $(sq "$bam") > $(sq "$idxstats")"
         record_command "04_sort_index idxstats $sid" "$cmd"
         printf '\n$ %s\n' "$cmd"
-        [[taf: taf-samtools-v1.23.1-r1 samtools idxstats '"$bam"' ]] </dev/null > "$idxstats"
+        [[taf: taf-samtools-v1.23.1-r1 samtools idxstats ::(@:)samtools-idxstats-step:: '"$bam"' ]] </dev/null > "$idxstats"
         if [ "$min_mapq" -gt 0 ]; then
             filtered="$bam_dir/$sid.mapq${min_mapq}.sorted.bam"
             filtered_bai="$filtered.bai"
-            cmd="taf-samtools-v1.23.1-r1 samtools view -@ $(sq "$threads") -b -q $(sq "$min_mapq") -o $(sq "$filtered") $(sq "$bam")"
+            cmd="taf-samtools-v1.23.1-r1 samtools view -@ $(sq "$threads") -b -q $(sq "$min_mapq") -o $(sq "$filtered") ::(@:)samtools-mapq-filter-step:: $(sq "$bam")"
             record_command "04_sort_index mapq $sid" "$cmd"
             printf '\n$ %s\n' "$cmd"
-            [[taf: taf-samtools-v1.23.1-r1 samtools view -@ '"$threads"' -b -q '"$min_mapq"' -o '"$filtered"' '"$bam"' ]] </dev/null
+            [[taf: taf-samtools-v1.23.1-r1 samtools view -@ '"$threads"' -b -q '"$min_mapq"' -o '"$filtered"' ::(@:)samtools-mapq-filter-step:: '"$bam"' ]] </dev/null
             mv "$filtered" "$bam"
-            cmd="taf-samtools-v1.23.1-r1 samtools index -@ $(sq "$threads") $(sq "$bam")"
+            cmd="taf-samtools-v1.23.1-r1 samtools index -@ $(sq "$threads") ::(@:)samtools-mapq-index-step:: $(sq "$bam")"
             record_command "04_sort_index mapq-index $sid" "$cmd"
             printf '\n$ %s\n' "$cmd"
-            [[taf: taf-samtools-v1.23.1-r1 samtools index -@ '"$threads"' '"$bam"' ]] </dev/null
+            [[taf: taf-samtools-v1.23.1-r1 samtools index -@ '"$threads"' ::(@:)samtools-mapq-index-step:: '"$bam"' ]] </dev/null
             [ -e "$filtered_bai" ] && rm -f "$filtered_bai"
         fi
         if [ "$keep_sam_flag" != true ]; then
@@ -477,10 +489,10 @@ fi
 
 log "START 05_multiqc"
 if {
-    cmd="taf-multiqc-v1.35-r2 multiqc $(sq "$outdir") --outdir $(sq "$reports_dir") --filename multiqc_report.html --data-format json --force --quiet"
+cmd="taf-multiqc-v1.35-r2 multiqc $(sq "$outdir") --outdir $(sq "$reports_dir") --filename multiqc_report.html --data-format json --force --quiet ::(@:)multiqc-step::"
     record_command "05_multiqc" "$cmd"
     printf '\n$ %s\n' "$cmd"
-    [[taf: taf-multiqc-v1.35-r2 multiqc '"$outdir"' --outdir '"$reports_dir"' --filename multiqc_report.html --data-format json --force --quiet ]] </dev/null
+    [[taf: taf-multiqc-v1.35-r2 multiqc '"$outdir"' --outdir '"$reports_dir"' --filename multiqc_report.html --data-format json --force --quiet ::(@:)multiqc-step:: ]] </dev/null
     [ -s "$reports_dir/multiqc_report.html" ] || fail "MultiQC report missing: $reports_dir/multiqc_report.html"
 } >> "$logs_steps_dir/05_multiqc.log" 2>&1; then
     log "DONE  05_multiqc"

@@ -65,7 +65,7 @@ taf check
 echo "[SMOKE] taf build"
 taf build
 
-flow_cmd="$project_dir/target/taf-rnaseq-alignment-flow-v0.1.0-r1"
+flow_cmd="$project_dir/target/taf-rnaseq-alignment-flow-v0.2.0-r1"
 if [ ! -x "$flow_cmd" ]; then
     echo "smoke: built flow command is missing or not executable: $flow_cmd" >&2
     exit 1
@@ -91,7 +91,7 @@ echo "[SMOKE] build upstream rnaseq-index-flow"
     taf check
     taf build
 )
-index_flow_cmd="$index_flow_dir/target/taf-rnaseq-index-flow-v0.1.0-r1"
+index_flow_cmd="$index_flow_dir/target/taf-rnaseq-index-flow-v0.2.0-r1"
 if [ ! -x "$index_flow_cmd" ]; then
     echo "smoke: built index flow command is missing or not executable: $index_flow_cmd" >&2
     exit 1
@@ -119,7 +119,8 @@ echo "[SMOKE] rnaseq-alignment-flow tiny fixture"
         --index "$run_dir/ref-out/03_results/hisat2_index/genome" \
         --outdir align-out \
         --threads 1 \
-        --trim
+        --trim \
+        @multiqc-step: --quiet @:
 )
 cd "$project_dir"
 
@@ -152,6 +153,7 @@ test -s "$out/run.manifest.json"
 grep -F 'tiny_se' "$out/04_reports/bam_files.tsv" >/dev/null
 grep -F 'tiny_pe' "$out/03_results/alignment_summary.tsv" >/dev/null
 grep -F 'taf-hisat2-v2.2.2-r2' "$out/04_reports/commands.sh" >/dev/null
+grep -F -- '--quiet --quiet' "$out/04_reports/commands.sh" >/dev/null
 grep -F 'taf-samtools	1.23.1-r1' "$out/04_reports/versions.tsv" >/dev/null
 grep -F 'sample_count	2' "$out/04_reports/flow_summary.tsv" >/dev/null
 grep -F '"flow": "rnaseq-alignment-flow"' "$out/run.manifest.json" >/dev/null
